@@ -1,0 +1,39 @@
+org: praveen08
+app: aws-nodejs-http
+service: thumbnail
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.9
+  region: us-east-1
+  stage: dev
+  timeout: 15
+  environment:
+    THUMBNAIL_SIZE: 30
+    REGION_NAME: ${self:provider.region}
+
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Resource: "*"
+          Action: 's3:*'
+
+custom:
+  bucket: thumbnail-extract
+  pythonRequirements:
+    dockerizePip: true
+
+functions:
+  s3ThumbnailGenerator:
+    handler: handler.s3ThumbnailGenerator
+    events:
+      - httpApi:
+          path: /
+          method: get
+      - s3:
+          bucket: ${self:custom.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .png
